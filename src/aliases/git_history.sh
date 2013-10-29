@@ -1,0 +1,1 @@
+alias git_history="git log --pretty=format:'%ad | %s'"
