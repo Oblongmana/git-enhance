@@ -4,50 +4,57 @@
 # plus some setup for salesforce projects
 git() { 
     ###### ARGUMENT PARSING SECTION ######
-
-    #ensure OPTIND reset, also done at end
-    OPTIND=1
+    
     salesforce_flag=false
     help_flag=false
     
-    temp_params_short_to_examine=()
     params_final=()
 
     for arg do
+
         first_char=$(echo ${arg} | cut -c1-1)
         first_two_chars=$(echo ${arg} | cut -c1-2)
 
         if [[ "$first_two_chars" == "--" ]]; then
-            #LONG ARG
+            #LONG FLAG
             # Acknowlege and strip salesforce flag
             # else: Add the long arg to final args to pass through
             case $arg in
-                --salesforce ) salesforce_flag=true ;; 
+                --salesforce ) salesforce_flag=true                   ;; 
                 --help       ) help_flag=true; params_final+=("$arg") ;;
-                *            ) params_final+=("$arg") ;;
+                *            ) params_final+=("$arg")                 ;;
             esac
         else
-            #ANY NON-LONG ARG
-            # Check if is a short arg
+            #ANY NON-LONG FLAG
+            # Check if is a short arg or short arg group
             # else: add the arg to final args to pass through
             if [[ "$first_char" == "-" ]] ; then
-                #SHORT ARG[s]
+                #SHORT FLAG[s]
                 # Acknowledge sf flag, strip any "s" out of short arg string
                 # Add the final string to final args to pass through, if 
                 #   not reduced to a single dash
+                
+                #Paranoid bookending of getopts loop with OPTIND to ensure
+                #  proper behaviour for both internal and external parties
+                OPTIND=1
                 while getopts ":sh " opt "${arg}"; do
                     case $opt in
                         s  ) salesforce_flag=true ;;
-                        h  ) help_flag=true ;;
+                        h  ) help_flag=true       ;;
                         \? )                      ;;
                     esac
                 done
                 OPTIND=1
+
+                #Strip any s out of this short arg group
+                #Add the remaining group to the final params, unless s was the 
+                # only option
                 strip_s_arg=("${arg//s/}")
                 if [[ "$strip_s_arg" != "-" ]]; then
                     params_final+=("$strip_s_arg")
                 fi
             else
+                #NON-FLAG WORDS
                 if [[ "$arg" == "help" ]]; then
                     help_flag=true
                 fi
@@ -55,9 +62,6 @@ git() {
             fi
         fi
     done
-
-    OPTIND=1
-
 
 
     ###### GIT INIT OVERRIDE SECTION ######
